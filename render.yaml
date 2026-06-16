@@ -4,7 +4,8 @@ services:
     runtime: node
     plan: free
     # Build/start run from the repo root so the pnpm workspace resolves.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @trim/api build
+    # --prod=false forces devDependencies (typescript/tsc) to install even when NODE_ENV=production.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @trim/api build
     startCommand: pnpm --filter @trim/api start
     healthCheckPath: /healthz
     envVars:
