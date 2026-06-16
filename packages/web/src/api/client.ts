@@ -1,8 +1,12 @@
 import axios from "axios";
 import type { LinkItem, LinkAnalytics, CreateLinkPayload } from "../types";
 
+// In dev, VITE_API_URL is unset and requests hit "/api" via the Vite proxy.
+// In production (Vercel), set VITE_API_URL to the Render backend origin.
+const API_ORIGIN = import.meta.env.VITE_API_URL ?? "";
+
 const http = axios.create({
-  baseURL: "/api",
+  baseURL: `${API_ORIGIN}/api`,
   headers: { "Content-Type": "application/json" },
 });
 
