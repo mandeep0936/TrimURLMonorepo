@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: trimurlmonorepo
+    runtime: node
+    plan: free
+    # Build/start run from the repo root so the pnpm workspace resolves.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @trim/api build
+    startCommand: pnpm --filter @trim/api start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        value: https://trimurlmonorepo.onrender.com
+      - key: CLIENT_URL
+        value: https://trim-url-monorepo-web.vercel.app
+      # PORT is provided automatically by Render.
+      # Set MONGODB_URI in the Render dashboard (e.g. a MongoDB Atlas connection string).
+      - key: MONGODB_URI
+        sync: false
