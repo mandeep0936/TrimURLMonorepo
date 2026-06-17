@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request } from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { connectDB } from "./config/db";
@@ -31,12 +31,29 @@ app.use(
 );
 app.use(express.json());
 
+// IIS/ARR forwards the client address as "ip:port"; express-rate-limit rejects
+// a key containing a port (ERR_ERL_INVALID_IP_ADDRESS). Strip the port here.
+function clientIp(req: Request): string {
+  const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
+  if (ip.startsWith("[")) {
+    // [IPv6]:port
+    const end = ip.indexOf("]");
+    return end > 0 ? ip.slice(1, end) : ip;
+  }
+  // IPv4:port has exactly one colon; plain IPv6 has several — leave those alone.
+  if ((ip.match(/:/g) ?? []).length === 1) {
+    return ip.split(":")[0];
+  }
+  return ip;
+}
+
 // Rate-limit link creation: 20 requests per minute per IP
 const createLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: clientIp,
   message: { error: { message: "Too many requests, please slow down", status: 429 } },
 });
 

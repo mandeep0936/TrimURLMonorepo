@@ -7,6 +7,34 @@ import { getCached, setCache } from "../utils/redirectCache";
 
 const router = Router();
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Redirect to the target via an HTML body (meta refresh + JS) instead of a 302
+// Location header. Behind IIS/ARR, a server 302's Location host gets rewritten
+// to our own domain (stripping the real target host); sending the target in the
+// body bypasses that. The "click" is still recorded server-side before this runs,
+// so analytics stay accurate.
+function sendHtmlRedirect(res: Response, target: string): void {
+  const safe = escapeHtml(target);
+  res
+    .status(200)
+    .set("Content-Type", "text/html; charset=utf-8")
+    .set("Cache-Control", "no-store")
+    .send(
+      `<!DOCTYPE html><html><head><meta charset="utf-8">` +
+        `<meta http-equiv="refresh" content="0; url=${safe}">` +
+        `<script>window.location.replace(${JSON.stringify(target)})</script>` +
+        `<title>Redirecting…</title></head>` +
+        `<body>Redirecting to <a href="${safe}">${safe}</a>…</body></html>`
+    );
+}
+
 // Graceful 404 for an unknown short code.
 // Browsers are redirected to the React app's /not-found page (consistent UI);
 // API clients (Accept: application/json) get the consistent JSON error shape.
@@ -72,9 +100,8 @@ router.get("/:code", async (req: Request, res: Response, next: NextFunction) => 
       }
     }
 
-    // 302 (Found), not 301: a 301 is cached permanently by browsers, so repeat
-    // visits skip the server and the click is never recorded. 302 keeps analytics accurate.
-    res.redirect(302, originalUrl);
+    // HTML-body redirect (not a 302) so IIS/ARR can't rewrite the target host.
+    sendHtmlRedirect(res, originalUrl);
   } catch (err) {
     next(err);
   }
