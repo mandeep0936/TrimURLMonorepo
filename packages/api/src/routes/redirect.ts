@@ -7,6 +7,17 @@ import { getCached, setCache } from "../utils/redirectCache";
 
 const router = Router();
 
+// Graceful 404 for an unknown short code.
+// Browsers are redirected to the React app's /not-found page (consistent UI);
+// API clients (Accept: application/json) get the consistent JSON error shape.
+function respondNotFound(req: Request, res: Response, next: NextFunction): void {
+  if (req.accepts(["html", "json"]) === "html") {
+    const clientUrl = process.env.CLIENT_URL ?? "";
+    return res.redirect(302, `${clientUrl}/not-found`);
+  }
+  next(createError("Short link not found", 404));
+}
+
 router.get("/:code", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const code = req.params["code"] as string;
@@ -26,7 +37,7 @@ router.get("/:code", async (req: Request, res: Response, next: NextFunction) => 
     if (!originalUrl) {
       const link = await Link.findOne({ code });
       if (!link) {
-        return next(createError("Short link not found", 404));
+        return respondNotFound(req, res, next);
       }
       originalUrl = link.originalUrl;
       setCache(code, originalUrl);
@@ -61,7 +72,8 @@ router.get("/:code", async (req: Request, res: Response, next: NextFunction) => 
       }
     }
 
-    // 302: intentional — 301 is cached by browsers, killing analytics accuracy
+    // 302 (Found), not 301: a 301 is cached permanently by browsers, so repeat
+    // visits skip the server and the click is never recorded. 302 keeps analytics accurate.
     res.redirect(302, originalUrl);
   } catch (err) {
     next(err);
