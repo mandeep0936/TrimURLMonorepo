@@ -11,7 +11,7 @@ export function HomePage() {
   const [lastCreated, setLastCreated] = useState<LinkItem | null>(null);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 py-10 space-y-6">
       <header className="flex items-center gap-3 mb-8">
         <div className="bg-brand-600 text-white rounded-xl p-2">
           <Scissors className="w-6 h-6" />

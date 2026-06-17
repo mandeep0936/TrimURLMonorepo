@@ -25,7 +25,7 @@ export function LinkTable({ links }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50 text-gray-500 text-left">
@@ -77,7 +77,7 @@ export function LinkTable({ links }: Props) {
                 {new Date(link.createdAt).toLocaleDateString()}
               </td>
 
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 whitespace-nowrap">
                 <Link
                   to={`/analytics/${link.code}`}
                   className="flex items-center gap-1 text-gray-400 hover:text-brand-600 transition-colors text-xs"
